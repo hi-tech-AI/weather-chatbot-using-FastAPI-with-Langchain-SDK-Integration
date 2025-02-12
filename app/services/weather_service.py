@@ -1,73 +1,90 @@
 import requests
 from fastapi import HTTPException
-from services.geoinfo import *
-
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-if not OPENWEATHER_API_KEY:
-    raise ValueError("Missing OpenWeather API Key")
-
-CURRENT_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
-FORECAST_WEATHER_URL = "https://pro.openweathermap.org/data/2.5/forecast/hourly"
-HISTORY_WEATHER_URL = "https://history.openweathermap.org/data/2.5/history/city"
+from services.get_geo_info import *
 
 
-def fetch_weather_data(url, params):
-    """Fetch weather data from the OpenWeather API."""
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        raise HTTPException(
-            status_code=400, detail=f"Failed to retrieve weather data: {str(e)}"
-        )
+def get_env_variable(var_name: str) -> str:
+    """Retrieve an environment variable and raise an error if it's not set."""
+    value = os.getenv(var_name)
+    if not value:
+        raise ValueError(f"{var_name} not found in environment variables.")
+    return value
 
 
-def get_weather_info(location, query_type):
-    """Retrieve weather information based on the query type."""
-    latitude, longitude = get_geo_info(location)
+class OpenWeatherService:
+    """Service class for interacting with the OpenWeather API."""
 
-    if query_type not in ["current", "forecast", "history"]:
-        raise ValueError(
-            "Invalid query type. Must be 'current', 'forecast', or 'history'."
-        )
+    def __init__(self):
+        self.openweather_api_key = get_env_variable("OPENWEATHER_API_KEY")
+        self.current_weather_url = get_env_variable("CURRENT_WEATHER_URL")
+        self.forecast_weather_url = get_env_variable("FORECAST_WEATHER_URL")
+        self.history_weather_url = get_env_variable("HISTORY_WEATHER_URL")
 
-    # Define base parameters
-    params = {
-        "lat": latitude,
-        "lon": longitude,
-        "appid": OPENWEATHER_API_KEY,
-        "units": "metric",
-    }
+    def fetch_weather_data(self, url, params):
+        """Fetch weather data from the OpenWeather API."""
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise HTTPException(
+                status_code=400, detail=f"Failed to retrieve weather data: {str(e)}"
+            )
 
-    if query_type == "history":
-        params["type"] = "hour"
+    def get_weather_info(self, location, weather_type):
+        """Retrieve weather information based on the query type."""
 
-    url_map = {
-        "current": CURRENT_WEATHER_URL,
-        "forecast": FORECAST_WEATHER_URL,
-        "history": HISTORY_WEATHER_URL,
-    }
+        locator = GeoLocation()
 
-    weather_data = fetch_weather_data(url_map[query_type], params)
+        try:
+            latitude, longitude = locator.get_geo_info(location)
+            print(
+                f"The geolocation for {location} is Latitude: {latitude}, Longitude: {longitude}"
+            )
+        except ValueError as ve:
+            print(ve)
 
-    # Handle current weather response
-    if query_type == "current":
-        description = weather_data["weather"][0]["description"]
-        temperature = weather_data["main"]["temp"]
-        return f"The current weather in {location} is {description} with a temperature of {temperature}°C."
+        url_map = {
+            "current": self.current_weather_url,
+            "forecast": self.forecast_weather_url,
+            "history": self.history_weather_url,
+        }
 
-    # Handle forecast response
-    elif query_type == "forecast":
-        forecast = weather_data["list"][0]
-        timestamp = forecast["dt_txt"]
-        description = forecast["weather"][0]["description"]
-        temperature = forecast["main"]["temp"]
-        return f"The weather forecast for {location} on {timestamp} is {description} with a temperature of {temperature}°C."
+        if weather_type not in url_map:
+            raise ValueError(
+                "Invalid query type. Must be 'current', 'forecast', or 'history'."
+            )
 
-    # Handle historical weather response
-    elif query_type == "history":
-        history_data = weather_data["list"][0]
-        description = history_data["weather"][0]["description"]
-        temperature = history_data["main"]["temp"]
-        return f"The weather in {location} was {description} with a temperature of {temperature}°C."
+        params = {
+            "lat": latitude,
+            "lon": longitude,
+            "appid": self.openweather_api_key,
+            "units": "metric",
+        }
+
+        # Additional parameter for the historical weather request
+        if weather_type == "history":
+            params["type"] = "hour"
+
+        weather_data = self.fetch_weather_data(url_map[weather_type], params)
+        return self._parse_weather_response(weather_data, location, weather_type)
+
+    def _parse_weather_response(self, weather_data, location, weather_type):
+        """Parse the weather data based on query type."""
+        if weather_type == "current":
+            description = weather_data["weather"][0]["description"]
+            temperature = weather_data["main"]["temp"]
+            return f"The current weather in {location} is {description} with a temperature of {temperature}°C."
+
+        elif weather_type == "forecast":
+            forecast = weather_data["list"][0]
+            timestamp = forecast["dt_txt"]
+            description = forecast["weather"][0]["description"]
+            temperature = forecast["main"]["temp"]
+            return f"The weather forecast for {location} on {timestamp} is {description} with a temperature of {temperature}°C."
+
+        elif weather_type == "history":
+            history_data = weather_data["list"][0]
+            description = history_data["weather"][0]["description"]
+            temperature = history_data["main"]["temp"]
+            return f"The weather in {location} was {description} with a temperature of {temperature}°C."
