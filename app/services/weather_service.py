@@ -3,6 +3,9 @@ from fastapi import HTTPException
 from services.geoinfo import *
 
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
+if not OPENWEATHER_API_KEY:
+    raise ValueError("Missing OpenWeather API Key")
+
 CURRENT_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 FORECAST_WEATHER_URL = "https://pro.openweathermap.org/data/2.5/forecast/hourly"
 HISTORY_WEATHER_URL = "https://history.openweathermap.org/data/2.5/history/city"
