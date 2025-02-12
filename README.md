@@ -50,6 +50,9 @@ A scalable FastAPI application that serves as a chatbot to process user inquirie
    LANGSMITH_API_KEY=your_langsmith_api_key
    LANGSMITH_PROJECT=your_langsmith_project_name
    OPENAI_API_KEY=your_openai_api_key
+   CURRENT_WEATHER_URL=current_weather_url
+   FORECAST_WEATHER_URL=forecast_weather_url
+   HISTORY_WEATHER_URL=history_weather_url
    ```
 
 5. **Run the application**
