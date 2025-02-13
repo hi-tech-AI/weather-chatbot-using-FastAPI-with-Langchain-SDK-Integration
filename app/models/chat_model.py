@@ -37,13 +37,26 @@ def weather_context_analyzer(context: str) -> Optional[str]:
 
 def compile_weather_patterns() -> list:
     """Compile regex patterns to detect weather-related queries."""
+
     patterns = [
-        r"(?i)(want to know the weather of|weather of|current weather of|weather in)\s+([A-Za-z\s]+)(?:\s*right now| today| currently)?\??",
-        r"(?i)(what\'?s?\s+the\s+(current|today\'?s?)\s+weather\s+in)\s+([A-Za-z\s]+)\??",
-        r"(?i)(weather\s+forecast\s+for)\s+([A-Za-z\s]+)\??",
-        r"(?i)(weather\s+in)\s+([A-Za-z\s]+)\??",
-        r"(?i)(weather\s+history\s+of)\s+([A-Za-z\s]+)\??",
+        # Current Weather
+        r"(?i)(want to know the\s+(current|today\'?s?|)\s*weather of|current\s*weather of|weather in)\s+([A-Za-z\s]+)(?:\s*right now| today| currently)?\??",
+        # Forecast
+        r"(?i)what\'?s?\s+the\s+weather forecast\s+(?:in|for|of)\s+([A-Za-z\s]+)\??",
+        r"(?i)what about the\s+tomorrow\s+weather\s+(?:in|for|of)\s+([A-Za-z\s]+)\??",
+        r"(?i)let me know the\s+weather\s+(?:in|of)\s+([A-Za-z\s]+)\s+after\s+\d+\s+days\??",
+        r"(?i)show me the\s+weather forecast\s+(?:in|for|of)\s+([A-Za-z\s]+)\??",
+        # Weather History
+        r"(?i)(what\'?s?\s+the\s+weather\s+history\s+of)\s+([A-Za-z\s]+)\??",
+        r"(?i)(weather\s+history\s+of|for|in)\s+([A-Za-z\s]+)\??",
+        r"(?i)show me the\s+(?:historical|history)\s+weather\s+(?:in|for|of)\s+([A-Za-z\s]+)\??",
+        r"(?i)(what\'?s?\s+the\s+(?:weather\s+history|historical\s+weather)\s+of|for)\s+([A-Za-z\s]+)\??",
+        r"(?i)let me know the\s+weather\s+(?:in|of)\s+([A-Za-z\s]+)\s+\d+\s+days+ago\??",
+        r"(?i)(historical\s+weather\s+of|for|in)\s+([A-Za-z\s]+)\??",
+        # Basic Weather Query
+        r"(?i)(what\'?s?\s+the\s+weather in)\s+([A-Za-z\s]+)\??",  # This could be either current, forecast, or unspecific; need context to determine type.
     ]
+
     return [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
 
 
@@ -67,9 +80,17 @@ def create_analysis_result(match: re.Match, context: str) -> str:
 def determine_weather_type(context: str) -> str:
     """Determine the type of weather information being queried."""
     lower_context = context.lower()
-    if "forecast" in lower_context:
+    if (
+        "forecast" in lower_context
+        or "tomorrow" in lower_context
+        or "after" in lower_context
+    ):
         return "forecast"
-    if "history" in lower_context:
+    if (
+        "history" in lower_context
+        or "historical" in lower_context
+        or "ago" in lower_context
+    ):
         return "history"
     return "current"
 
