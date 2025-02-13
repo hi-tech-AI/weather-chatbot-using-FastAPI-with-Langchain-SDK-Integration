@@ -1,9 +1,8 @@
-fastapi  
-pydantic  
-langchain-core  
-langchain-openai  
-requests  
-python-dotenv  
-opencage-geocoder  
-sqlite3  
+fastapi
+pydantic
+langchain-core
+langchain-openai
+requests
+python-dotenv
+opencage
 uvicorn
