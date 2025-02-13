@@ -87,24 +87,67 @@ A scalable FastAPI application that serves as a chatbot to process user inquirie
   }
   ```
 
-## Development
+## Containerization with Docker
 
-### Run Tests
+### Prerequisites
 
-(Assuming tests are located in a `tests` folder)
+- Ensure Docker is installed and running on your machine.
 
-```sh
-pytest tests
-```
+### Steps for Docker
 
-### Linting and Code Quality
+1. **Build Docker Image**
 
-Use tools like `flake8` and `black` for linting and code formatting:
+   Before building the image, ensure your `Dockerfile` is configured as described in the previous section.
 
-```sh
-flake8 .
-black .
-```
+   ```sh
+   docker build -t weather-chatbot-api .
+   ```
+
+   This command builds and tags your Docker image as `weather-chatbot-api`.
+
+2. **Run the Docker Container**
+
+   You need to pass the environment variables defined in your `.env` file to the container. For that, use the `--env-file` option in the `docker run` command. Make sure your `.env` file is located in the same directory where you're running the command or provide the specific path to it.
+
+   ```sh
+   docker run -d --name weather-chatbot-api-container \
+     --env-file .env \
+     -p 8000:8000 \
+     weather-chatbot-api
+   ```
+
+   This command runs the Docker container in detached mode (`-d`), sets the container name to `weather-chatbot-api-container`, exposes port 8000, and passes the environment variables.
+
+3. **Access the API**
+
+   Once the container is running, your FastAPI application will be accessible at `http://localhost:8000`.
+
+4. **Stopping and Removing Containers**
+
+   To stop the running container, use:
+
+   ```sh
+   docker stop weather-chatbot-api-container
+   ```
+
+   To remove the stopped container, use:
+
+   ```sh
+   docker rm weather-chatbot-api-container
+   ```
+
+#### Notes
+
+- **Debugging**: If you encounter issues, check the logs of the container for debugging using:
+  
+  ```sh
+  docker logs weather-chatbot-api-container
+  ```
+
+- **Environment Variables**: It's crucial to manage your sensitive environment variables (like API keys) securely. Consider using Docker Secrets or similar tools for production environments.
+
+By following these steps, you can easily build and deploy this Weather Chatbot API within a Docker container, which simplifies deployment and scaling in different environments.
+
 
 ## Contributing
 
@@ -113,9 +156,8 @@ Contributions are welcome! Please fork the repository and submit a pull request 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
-```
 
-### Additional Notes:
+
+## Additional Notes:
 - Replace placeholder values such as `yourusername` or `your_openweather_api_key` with actual values where applicable.
 - Ensure that any additional setup steps specific to your development environment (like database initialization) are documented accordingly.
-- If using Docker, you might consider adding Docker-specific installation and running instructions.
